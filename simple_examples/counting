@@ -1,0 +1,62 @@
+.logfile counting_log.txt
+#
+one plus one equals two
+two plus one equals three
+three plus one equals four
+four plus one equals five
+five plus one equals six
+six plus one equals seven
+seven plus one equals eight
+eight plus one equals nine
+nine plus one equals ten
+ten plus one equals eleven
+#
+one plus two equals three
+two plus two equals four
+three plus two equals five
+four plus two equals six
+five plus two equals seven
+six plus two equals eight
+seven plus two equals nine
+eight plus two equals ten
+nine plus two equals eleven
+ten plus two equals twelve
+#
+one plus three equals four
+two plus three equals five
+three plus three equals six
+four plus three equals seven
+five plus three equals eight
+six plus three equals nine
+seven plus three equals ten
+eight plus three equals eleven
+nine plus three equals twelve
+ten plus three equals thirteen
+#
+add number two
+.wg two
+.push_goal
+to the sequence six three nine four
+.wg six
+.ph six plus two equals eight
+.wg eight
+.prw
+.rip
+.wg three
+.ph three plus two equals five
+.wg five
+.prw
+.rip
+.wg nine
+.ph nine plus two equals eleven
+.wg eleven
+.prw
+.rip
+.wg four
+.ph four plus two equals six
+.wg six
+.rw
+.drop_goal
+#if the goal is not dropped the exploitation will not complete "Exploitation number of updates >= 4000"
+.x add number two to the sequence six three nine four
+.x add number three to the sequence seven eight two five
