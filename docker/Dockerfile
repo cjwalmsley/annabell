@@ -1,58 +1,57 @@
+# syntax=docker/dockerfile:1
 
+FROM ubuntu:latest as base
 
+FROM base as build
 
-# 1. Specify the base image
-FROM ubuntu:latest
+RUN echo "Setting up dependencies..." && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        g++ \
+        cmake \
+        libpcre3-dev \
+        libgtest-dev \
+        make \
+        pkg-config \
+    	xz-utils && \
+    cd /usr/src/gtest && \
+    cmake CMakeLists.txt && \
+    make && \
+    rm -rf /var/lib/apt/lists/*
 
-LABEL authors="chris"
+COPY annabell.tar.xz /app/
 
-ENTRYPOINT ["top", "-b"]
+RUN echo "Setting up Annabell..." && \
+    cd /app/ && \
+    tar -xvJf annabell.tar.xz && \
+    echo "Contents of /app after tar:" && \
+    ls -l /app/ && \
+    # Assuming tar extracts to a directory named 'annabell' inside /app
+    cd annabell && \
+    ./configure && \
+    make && \
+    make install
 
-# 2. Set environment variables (optional)
-ENV MY_APP_VERSION=1.0
+FROM base AS final
 
-# 3. Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    apt-get update -y \
-	apt install -y libgtest-dev cmake g++ libpcre3-dev \
-	cd /usr/src/gtest \
-	cmake CmakeLists.txt \
-	make
+        adduser \
+        libpcre3 \
+        libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
 
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /usr/local/bin/annabell /usr/local/bin/annabell
 
-# 4. Copy the zipped source code from the current directory into the container at /app
-COPY annabell.tar.xz /app
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    appuser
+USER appuser
 
-# 5. Set the working directory
-WORKDIR /app
-
-#Copy, unzip Annabell, and change directory
-RUN echo "Setting up Annabell..." \
-cd /app \
-tar -xvzf /tmp/annabell.tar.xz \
-cd annabell \
-./configure \
-make \
-sudo make install \
-annabell
-
-
-
-# 6. Compile the code
-# Replace './configure && make && make install' with your actual build commands
-# For example, if it's a C++ project using CMake:
-# RUN mkdir build && cd build && cmake .. && make && make install
-# Or for a Python project, you might install requirements:
-# RUN pip install -r requirements.txt
-RUN echo "Replace this with your actual compilation commands"
-# Example for a simple C program named main.c:
-# COPY main.c /app/
-# RUN gcc -o myapp main.c
-
-# 7. Define the runtime command (optional, if the image is meant to run an application)
-# This command will run when a container is started from this image.
-# Replace './myapp' with the command to run your compiled application.
-# CMD ["./myapp"]
-CMD ["echo", "Build complete. Replace with your application's entrypoint."]
+ENTRYPOINT [ "annabell" ]
