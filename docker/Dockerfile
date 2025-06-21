@@ -54,4 +54,4 @@ RUN adduser \
     appuser
 USER appuser
 
-ENTRYPOINT [ "annabell" ]
+#ENTRYPOINT [ "annabell" ]
