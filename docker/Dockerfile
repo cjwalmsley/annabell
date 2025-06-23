@@ -4,6 +4,8 @@ FROM ubuntu:latest as base
 
 FROM base as build
 
+ARG ANNABELL_VERSION="annabell"
+
 RUN echo "Setting up dependencies..." && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -19,15 +21,15 @@ RUN echo "Setting up dependencies..." && \
     make && \
     rm -rf /var/lib/apt/lists/*
 
-COPY annabell_increased_phrase_size.tar.xz /app/
+COPY ${ANNABELL_VERSION}.tar.xz /app/
 
 RUN echo "Setting up Annabell..." && \
     cd /app/ && \
-    tar -xvJf annabell_increased_phrase_size.tar.xz && \
+    tar -xvJf ${ANNABELL_VERSION}.tar.xz && \
     echo "Contents of /app after tar:" && \
     ls -l /app/ && \
     # Assuming tar extracts to a directory named 'annabell' inside /app
-    cd annabell_increased_phrase_size && \
+    cd ${ANNABELL_VERSION} && \
     ./configure && \
     make && \
     make install
@@ -54,4 +56,4 @@ RUN adduser \
     appuser
 USER appuser
 
-#ENTRYPOINT [ "annabell" ]
+ENTRYPOINT [ "annabell" ]
