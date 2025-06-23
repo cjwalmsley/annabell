@@ -40,4 +40,3 @@ tell me a mammal
 #
 tell me a reptile
 .xr
-.x add the number three to the sequence seven eight two five
