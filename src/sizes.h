@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace sizes
 {
-  const int PhSize=10;
+  const int PhSize=20;
   const int CSize=7;
   const int NC=25;
   const int WSize=NC*CSize;
