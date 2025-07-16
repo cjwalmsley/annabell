@@ -25,7 +25,7 @@ namespace sizes
   const int NC=25;
   const int WSize=NC*CSize;
   const int WMSize=1000;
-  const float Wgm=0.5;
+  const float Wgm=1;
   const int WkPhfWGSize=100000;
   const int StActSize=300;
   const int ElActfStSize=120000;
