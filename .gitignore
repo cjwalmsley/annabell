@@ -37,3 +37,4 @@ libtool
 doxygen
 .DS_Store
 
+/source_code_analysis/
