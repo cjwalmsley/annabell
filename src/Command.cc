@@ -1355,7 +1355,7 @@ int TargetExploration(Annabell *annabell, Monitor *Mon, string name, string targ
     }
     if (annabell->GetRndFlag->Nr[0]->O>0.5) {
       int N1, N2;
-      N1=rnd_int()%10; //N1=1+seed%5;
+      N1=rnd_int()%PhSize; //N1=1+seed%5;
       N2=rnd_int()%6; //1+seed%5;
       //cout << N1 << " " << N2 << endl;
       for (int i=0; i<PhSize; i++) vin[i] = (i==N1) ? 1 : 0;
