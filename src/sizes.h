@@ -24,11 +24,11 @@ namespace sizes
   const int CSize=7;
   const int NC=25;
   const int WSize=NC*CSize;
-  const int WMSize=1000;
+  const int WMSize=6000;
   const float Wgm=0.5;
   const int WkPhfWGSize=100000;
   const int StActSize=300;
-  const int ElActfStSize=120000;
+  const int ElActfStSize=600000;
   const int MemPhSize=100000;
   const int IterSize=10000;
   const int MaxExploreIter=9990;  
