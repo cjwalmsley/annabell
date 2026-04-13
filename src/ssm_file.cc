@@ -36,12 +36,23 @@ int FREAD(T *var, int size, int nmemb, FILE *fp)
   return 0;
 }
 
+// Wrapper for fwrite with strict error checking
+template <typename T>
+int FWRITE(const T *var, int size, int nmemb, FILE *fp)
+{
+  int err = fwrite(var, size, nmemb, fp);
+  if (err!=nmemb)
+    throw ann_exception("Error writing file: Disk full, quota reached, or file size limit exceeded.\n");
+
+  return 0;
+}
+
 int vssm::SaveNr(FILE *fp)
 {
-  fwrite(&NewWnnNum, sizeof(int), 1, fp);
+  FWRITE(&NewWnnNum, sizeof(int), 1, fp);
   for (int i=0; i<NN(); i++) {
-    fwrite(&Nr[i]->B, sizeof(float), 1, fp);
-    fwrite(&Nr[i]->Used, sizeof(bool), 1, fp);
+    FWRITE(&Nr[i]->B, sizeof(float), 1, fp);
+    FWRITE(&Nr[i]->Used, sizeof(bool), 1, fp);
   }
 
   return 0;
@@ -68,13 +79,13 @@ int vssm::SaveSparseInputLinks(FILE *fp)
       vector<int> *lk_set = &InputLkSet[issm][inr];
       vector<float> *lk_wg = &InputLkWg[issm][inr];
       int Nlk = lk_set->size();
-      fwrite(&Nlk, sizeof(int), 1, fp);
+      FWRITE(&Nlk, sizeof(int), 1, fp);
       for (int ilk=0; ilk<Nlk; ilk++) {
-	fwrite(&lk_set->at(ilk), sizeof(int), 1, fp); 
-	fwrite(&lk_wg->at(ilk), sizeof(float), 1, fp);
+        FWRITE(&lk_set->at(ilk), sizeof(int), 1, fp);
+        FWRITE(&lk_wg->at(ilk), sizeof(float), 1, fp);
       }
     }
-  } 
+  }
 
   return 0;
 }
@@ -90,18 +101,25 @@ int vssm::LoadSparseInputLinks(FILE *fp)
       vector<float> *lk_wg = &InputLkWg[issm][inr];
       int Nlk;
       FREAD(&Nlk, sizeof(int), 1, fp);
-      lk_set->clear(); 
-      lk_wg->clear();  
+      lk_set->clear();
+      lk_wg->clear();
+
+      // --- ADDED MEMORY OPTIMIZATION ---
+      // Pre-allocate exact memory needed to prevent reallocation spikes
+      lk_set->reserve(Nlk);
+      lk_wg->reserve(Nlk);
+      // ---------------------------------
+
       for (int ilk=0; ilk<Nlk; ilk++) {
-	int nr1;
-	float wg;
-	FREAD(&nr1, sizeof(int), 1, fp); 
-	FREAD(&wg, sizeof(float), 1, fp); 
-	lk_set->push_back(nr1); 
-	lk_wg->push_back(wg); 
+        int nr1;
+        float wg;
+        FREAD(&nr1, sizeof(int), 1, fp);
+        FREAD(&wg, sizeof(float), 1, fp);
+        lk_set->push_back(nr1);
+        lk_wg->push_back(wg);
       }
     }
-  } 
+  }
 
   return 0;
 }
@@ -112,15 +130,15 @@ int vssm_io::SaveSparseOutputLinks(FILE *fp)
     io_nr *nr1 = OutNr[i];
     lk_set_t* ls1 = SparseOutLkSet[i];
     int Nlk = ls1->size();
-    fwrite(&Nlk, sizeof(int), 1, fp);
+    FWRITE(&Nlk, sizeof(int), 1, fp);
     for (int il=0; il<Nlk; il++) {
       pair<int,int>p = ls1->at(il);
       int issm = p.first;
       int inr = p.second;
-      fwrite(&issm, sizeof(int), 1, fp);
-      fwrite(&inr, sizeof(int), 1, fp);
+      FWRITE(&issm, sizeof(int), 1, fp);
+      FWRITE(&inr, sizeof(int), 1, fp);
       float wg = nr1->OutL[il].Wg;
-      fwrite(&wg, sizeof(float), 1, fp);
+      FWRITE(&wg, sizeof(float), 1, fp);
     }
   }
 
@@ -135,13 +153,19 @@ int vssm_io::LoadSparseOutputLinks(FILE *fp)
     int Nlk;
     FREAD(&Nlk, sizeof(int), 1, fp);
     nr1->OutL.clear();
+
+    // --- ADDED MEMORY OPTIMIZATION ---
+    nr1->OutL.reserve(Nlk);
+    ls1->reserve(Nlk);
+    // ---------------------------------
+
     for (int il=0; il<Nlk; il++) {
       int issm, inr;
       float wg;
       FREAD(&issm, sizeof(int), 1, fp);
       FREAD(&inr, sizeof(int), 1, fp);
       FREAD(&wg, sizeof(float), 1, fp);
-      pair<int,int>p = make_pair(issm,inr); 
+      pair<int,int>p = make_pair(issm,inr);
       lk l;
       l.Wg = wg;
       l.Nr = OutSSM[issm]->Nr[inr];
@@ -160,7 +184,7 @@ int vssm_io::SaveOutputLinks(FILE *fp)
     int Nlk =  nr1->OutL.size();
     for (int il=0; il<Nlk; il++) {
       float wg = nr1->OutL[il].Wg;
-      fwrite(&wg, sizeof(float), 1, fp);
+      FWRITE(&wg, sizeof(float), 1, fp);
     }
   }
 
@@ -189,7 +213,7 @@ int vssm::SaveInputLinks(FILE *fp)
     int Nlk =  nr1->L.size();
     for (int il=0; il<Nlk; il++) {
       float wg = nr1->L[il].Wg;
-      fwrite(&wg, sizeof(float), 1, fp);
+      FWRITE(&wg, sizeof(float), 1, fp);
     }
   }
 
@@ -214,9 +238,9 @@ int vssm::LoadInputLinks(FILE *fp)
 int Monitor::SaveWM(FILE *fp)
 {
   for (int iw=0; iw<WMSize; iw++) {
-    fwrite(&wflag[iw], sizeof(int), 1, fp);
+    FWRITE(&wflag[iw], sizeof(int), 1, fp);
     for (int ic=0; ic<NC; ic++) {
-      fwrite(&wlst[iw][ic], sizeof(char), 1, fp);
+      FWRITE(&wlst[iw][ic], sizeof(char), 1, fp);
     }
   }
 
@@ -250,7 +274,7 @@ long vssm::CountSparseInputLinks()
       long Nlk = lk_set->size();
       NlkTot += Nlk;
     }
-  } 
+  }
 
   return NlkTot;
 }
@@ -263,7 +287,7 @@ long vssm::CountVirtualInputLinks()
     vssm *ssm1=SparseInSSM[issm];
     long Nnr = ssm1->NN();
     NlkTot += Nnr*NN();
-  } 
+  }
 
   return NlkTot;
 }
@@ -289,7 +313,7 @@ long vssm_io::CountVirtualOutputLinks()
     vssm *ssm1=OutSSM[issm];
     long Nnr = ssm1->NN();
     NlkTot += Nnr*NN();
-  } 
+  }
 
   return NlkTot;
 }
@@ -317,4 +341,3 @@ long vssm::CountInputLinks()
 
   return NlkTot;
 }
-
