@@ -135,6 +135,7 @@ int vssm_io::LoadSparseOutputLinks(FILE *fp)
     int Nlk;
     FREAD(&Nlk, sizeof(int), 1, fp);
     nr1->OutL.clear();
+    ls1->clear();
     for (int il=0; il<Nlk; il++) {
       int issm, inr;
       float wg;
