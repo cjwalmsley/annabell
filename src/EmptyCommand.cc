@@ -12,7 +12,9 @@
 #include <fssm.h>
 #include <gettime.h>
 #include <Monitor.h>
+#include <sizes.h>
 #include <ssm.h>
+#include <stdint.h>
 #include <cstdio>
 #include <ctime>
 #include <iostream>
@@ -22,6 +24,28 @@
 int GetInputPhrase(Annabell *annabell, Monitor *Mon, string input_phrase);
 int ExecuteAct(Annabell *annabell, Monitor *Mon, int rwd_act, int acq_act, int el_act);
 string Exploitation(Annabell *annabell, Monitor *Mon, display* Display, int n_iter);
+
+using namespace sizes;
+
+static const uint32_t kLinksFileMagic = 0x414E4C4B; // ANLK
+static const uint32_t kLinksFileVersion = 1;
+
+template <typename T>
+static bool WriteValue(FILE *fp, const T &value)
+{
+	return fwrite(&value, sizeof(T), 1, fp)==1;
+}
+
+static bool WriteLinksHeader(FILE *fp)
+{
+	if (!WriteValue(fp, kLinksFileMagic)) return false;
+	if (!WriteValue(fp, kLinksFileVersion)) return false;
+	if (!WriteValue(fp, WMSize)) return false;
+	if (!WriteValue(fp, NC)) return false;
+	if (!WriteValue(fp, PhSize)) return false;
+
+	return true;
+}
 
 EmptyCommand::EmptyCommand() :
 		Command() {
@@ -63,17 +87,36 @@ int EmptyCommand::execute() {
 			char filename[20];
 			sprintf(filename, "links_%d.dat", annabell->flags->AutoSaveLinkIndex);
 			FILE *fp = fopen(filename, "wb");
+			if (fp == NULL) {
+				Display->Warning("cannot open links file for writing.");
+				return 1;
+			}
+			if (!WriteLinksHeader(fp)) {
+				Display->Warning("Error writing links file header.");
+				fclose(fp);
+				return 1;
+			}
 			Mon->SaveWM(fp);
 			if (annabell->MemPh->HighVect.size() != 1) {
 				Display->Warning("Error on MemPh.");
+				fclose(fp);
 				return 1;
 			}
-			fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp);
+			if (fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp) != 1) {
+				Display->Warning("Error writing MemPh.");
+				fclose(fp);
+				return 1;
+			}
 			if (annabell->StartPh->HighVect.size() != 1) {
 				Display->Warning("Error on StartPh.");
+				fclose(fp);
 				return 1;
 			}
-			fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp);
+			if (fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp) != 1) {
+				Display->Warning("Error writing StartPh.");
+				fclose(fp);
+				return 1;
+			}
 
 			annabell->IW->SaveNr(fp);
 			annabell->IW->SaveInputLinks(fp);

@@ -15,6 +15,7 @@
 #include <rnd.h>
 #include <sizes.h>
 #include <ssm.h>
+#include <stdint.h>
 #include <cstdio>
 #include <ctime>
 #include <fstream>
@@ -63,6 +64,73 @@ string to_string(T const& value) {
     stringstream sstr;
     sstr << value;
     return sstr.str();
+}
+
+static const uint32_t kLinksFileMagic = 0x414E4C4B; // ANLK
+static const uint32_t kLinksFileVersion = 1;
+
+template <typename T>
+static bool WriteValue(FILE *fp, const T &value)
+{
+  return fwrite(&value, sizeof(T), 1, fp)==1;
+}
+
+template <typename T>
+static bool ReadValue(FILE *fp, T &value)
+{
+  return fread(&value, sizeof(T), 1, fp)==1;
+}
+
+static bool WriteLinksHeader(FILE *fp)
+{
+  if (!WriteValue(fp, kLinksFileMagic)) return false;
+  if (!WriteValue(fp, kLinksFileVersion)) return false;
+  if (!WriteValue(fp, WMSize)) return false;
+  if (!WriteValue(fp, NC)) return false;
+  if (!WriteValue(fp, PhSize)) return false;
+
+  return true;
+}
+
+static int ReadLinksHeader(FILE *fp, bool &has_header, string &error)
+{
+  has_header = false;
+  uint32_t magic;
+  if (!ReadValue(fp, magic)) {
+    error = "Error reading links file.";
+    return 1;
+  }
+
+  if (magic != kLinksFileMagic) {
+    if (fseek(fp, 0, SEEK_SET)!=0) {
+      error = "Error seeking links file.";
+      return 1;
+    }
+    return 0;
+  }
+
+  has_header = true;
+  uint32_t version;
+  int wm_size, nc, ph_size;
+  if (!ReadValue(fp, version)
+      || !ReadValue(fp, wm_size)
+      || !ReadValue(fp, nc)
+      || !ReadValue(fp, ph_size)) {
+    error = "Error reading links file header.";
+    return 1;
+  }
+
+  if (version != kLinksFileVersion) {
+    error = "Unsupported links file version.";
+    return 1;
+  }
+
+  if (wm_size!=WMSize || nc!=NC || ph_size!=PhSize) {
+    error = "Links file incompatible with current WMSize/NC/PhSize.";
+    return 1;
+  }
+
+  return 0;
 }
 
 Command::Command() {
@@ -808,17 +876,36 @@ int ParseCommand(Annabell *annabell, Monitor *Mon, display* Display, timespec* c
     else filename = input_token[1];
 
     FILE *fp=fopen(filename.c_str(), "wb");
+    if (fp==NULL) {
+      Display->Warning("cannot open links file for writing.");
+      return 1;
+    }
+    if (!WriteLinksHeader(fp)) {
+      Display->Warning("Error writing links file header.");
+      fclose(fp);
+      return 1;
+    }
     Mon->SaveWM(fp);
     if (annabell->MemPh->HighVect.size()!=1) {
       Display->Warning("Error on MemPh.");
+      fclose(fp);
       return 1;
     }
-    fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp);
+    if (fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp)!=1) {
+      Display->Warning("Error writing MemPh.");
+      fclose(fp);
+      return 1;
+    }
     if (annabell->StartPh->HighVect.size()!=1) {
       Display->Warning("Error on StartPh.");
+      fclose(fp);
       return 1;
     }
-    fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp);
+    if (fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp)!=1) {
+      Display->Warning("Error writing StartPh.");
+      fclose(fp);
+      return 1;
+    }
 
     annabell->IW->SaveNr(fp);
     annabell->IW->SaveInputLinks(fp);
@@ -849,6 +936,16 @@ int ParseCommand(Annabell *annabell, Monitor *Mon, display* Display, timespec* c
     if ((fp=fopen(filename.c_str(), "rb")) == NULL) {
       Display->Warning("Links file not found.");
       return 1;
+    }
+    bool has_header;
+    string header_error;
+    if (ReadLinksHeader(fp, has_header, header_error)!=0) {
+      Display->Warning(header_error);
+      fclose(fp);
+      return 1;
+    }
+    if (!has_header) {
+      Display->Warning("Legacy links file format detected: no header.");
     }
     Mon->LoadWM(fp);
     int i1;
