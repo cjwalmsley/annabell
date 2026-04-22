@@ -28,7 +28,7 @@ string Exploitation(Annabell *annabell, Monitor *Mon, display* Display, int n_it
 using namespace sizes;
 
 static const uint32_t kLinksFileMagic = 0x414E4C4B; // ANLK
-static const uint32_t kLinksFileVersion = 1;
+static const uint32_t kLinksFileVersion = 2;
 
 template <typename T>
 static bool WriteValue(FILE *fp, const T &value)
@@ -43,6 +43,7 @@ static bool WriteLinksHeader(FILE *fp)
 	if (!WriteValue(fp, WMSize)) return false;
 	if (!WriteValue(fp, NC)) return false;
 	if (!WriteValue(fp, PhSize)) return false;
+	if (!WriteValue(fp, ElActfStSize)) return false;
 
 	return true;
 }

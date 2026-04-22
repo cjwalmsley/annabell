@@ -1,0 +1,94 @@
+.stat
+Learned Words: 0
+Learned Phrases: 0
+Learned associations between word groups and phrases: 0
+IW input links: 1225000
+ElActfSt neurons: 0
+ElActfSt input links: 0
+ElActfSt virtual input links: 45925704000
+ElActfSt output links: 1440000
+RemPh output links: 0
+RemPh virtual output links: 17000000000
+RemPhfWG neurons: 0
+RemPhfWG input links: 0
+RemPhfWG virtual input links: 7001000000
+RemPhfWG output links: 0
+RemPhfWG virtual output links: 10000000000
+.load test_weights.dat
+.load test_weights.dat
+
+ >>> End context
+.stat
+Learned Words: 12
+Learned Phrases: 12
+Learned associations between word groups and phrases: 48
+IW input links: 1225000
+ElActfSt neurons: 320
+ElActfSt input links: 143040
+ElActfSt virtual input links: 45925704000
+ElActfSt output links: 1440000
+RemPh output links: 88
+RemPh virtual output links: 17000000000
+RemPhfWG neurons: 48
+RemPhfWG input links: 483
+RemPhfWG virtual input links: 7001000000
+RemPhfWG output links: 48
+RemPhfWG virtual output links: 10000000000
+
+ >>> End context
+#id: 56bfc563a10cfb14005512ca
+? what word is often used to describe Beyonce
+.x
+
+#END OF TESTING SAMPLE
+
+ >>> End context
+.stat
+Learned Words: 12
+Learned Phrases: 16
+Learned associations between word groups and phrases: 72
+IW input links: 1225000
+ElActfSt neurons: 320
+ElActfSt input links: 143040
+ElActfSt virtual input links: 45925704000
+ElActfSt output links: 1440000
+RemPh output links: 112
+RemPh virtual output links: 17000000000
+RemPhfWG neurons: 72
+RemPhfWG input links: 552
+RemPhfWG virtual input links: 7001000000
+RemPhfWG output links: 72
+RemPhfWG virtual output links: 10000000000
+.stat
+Learned Words: 12
+Learned Phrases: 16
+Learned associations between word groups and phrases: 72
+IW input links: 1225000
+ElActfSt neurons: 320
+ElActfSt input links: 143040
+ElActfSt virtual input links: 45925704000
+ElActfSt output links: 1440000
+RemPh output links: 112
+RemPh virtual output links: 17000000000
+RemPhfWG neurons: 72
+RemPhfWG input links: 552
+RemPhfWG virtual input links: 7001000000
+RemPhfWG output links: 72
+RemPhfWG virtual output links: 10000000000
+.t
+Elapsed time: 2.358305
+StActMem->act_time: 0.000152
+StActMem->as_time: 0.222901
+ElActfSt->act_time: 0.031707
+ElActfSt->as_time: 0.003828
+RemPh->act_time: 0.651787
+RemPh->as_time: 0.250952
+RemPhfWG->act_time: 0.000367
+RemPhfWG->as_time: 0.113164
+ElActfSt neurons: 320
+ElActfSt links: 0
+.logfile off
+
+real	0m2.977s
+user	0m2.786s
+sys	0m0.350s

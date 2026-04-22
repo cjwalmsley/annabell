@@ -209,6 +209,13 @@ const string PERIOD_ON = "on";
 const string PERIOD_OFF = "off";
 
 /**
+ * Enables/disables verbose diagnostics.
+ */
+const string VERBOSE_CMD = ".verbose";
+const string VERBOSE_ON = "on";
+const string VERBOSE_OFF = "off";
+
+/**
  * Records the answer time.
  */
 const string ANSWER_TIME_CMD = ".at";

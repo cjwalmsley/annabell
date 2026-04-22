@@ -1,0 +1,40 @@
+Bootstrap: docker
+From: ubuntu:latest
+Stage: build
+
+%setup
+    mkdir -p ${APPTAINER_ROOTFS}/app
+
+%files
+    # Copy only the build-relevant project files to avoid host-side broken symlinks.
+    ./configure.ac /app/annabell/
+    ./configure /app/annabell/
+    ./annabell.spec.in /app/annabell/
+    ./Makefile.am /app/annabell/
+    ./Makefile.in /app/annabell/
+    ./aclocal.m4 /app/annabell/
+    ./build-aux /app/annabell/build-aux
+    ./src /app/annabell/src
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends \
+        g++ cmake libpcre3-dev libgtest-dev make pkg-config xz-utils \
+        libpcre3 libgomp1 sed adduser automake autoconf libtool
+
+    # Build and install Annabell from the copied workspace sources.
+    cd /app/annabell
+    mkdir -p m4
+    autoreconf -fiv
+    ./configure
+    make -j"$(nproc)"
+    make install
+
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    exec /usr/local/bin/annabell "$@"
+
+%labels
+    Author Chris
+    Description "Annabell built from workspace sources"
+

@@ -1,0 +1,6 @@
+#build a new apptainer image
+apptainer build ANNABELL_LATEST.sif /home/chris/PycharmProjects/annabell/apptainer/build_annabell.def
+
+apptainer exec --bind "$PWD:/workspace" ./ANNABELL_LATEST.sif bash -lc 'cd /workspace && exec annabell -pf annabell_startup_config/annabell_startup_config.txt'
+
+

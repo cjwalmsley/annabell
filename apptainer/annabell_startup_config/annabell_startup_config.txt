@@ -1,0 +1,13 @@
+# ANNABELL Configuration File - sets the values used in free-parameters
+#default values:
+#seed = 12345;
+#CW_W = 1;
+#InPhB_W = 3;
+#WkPhB_W = 1;
+#WkEqWG_W = 3;
+#WkEqGoalWG_W = 5;
+#GoalPhEqGoalWG_W = 1;
+#OutPhB_W = 1;
+#MaxDynamicBias_W = 500;
+#Overidden values
+MaxDynamicBias 1500

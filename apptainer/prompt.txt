@@ -1,0 +1,12 @@
+write a shell script called "train_test_evaluate_annabell.sh" that:
+1) starts the apptainer image ANNABELL_LATEST.sif
+2) in the apptainer container:
+	2.1) runs the train_annabell.sh script
+	2.2) runs the test_annabell_script
+3) inspects the test_logfile to find the following output: "#id: 56bfc563a10cfb14005512ca
+? what word is often used to describe Beyonce
+.x
+ -> Bootylicious
+.
+Bootylicious
+#END OF TESTING SAMPLE" if it finds the text then it reports a successful test , otherwise it reports an unsuccessful test

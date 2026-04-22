@@ -67,7 +67,7 @@ string to_string(T const& value) {
 }
 
 static const uint32_t kLinksFileMagic = 0x414E4C4B; // ANLK
-static const uint32_t kLinksFileVersion = 1;
+static const uint32_t kLinksFileVersion = 2;
 
 template <typename T>
 static bool WriteValue(FILE *fp, const T &value)
@@ -88,45 +88,57 @@ static bool WriteLinksHeader(FILE *fp)
   if (!WriteValue(fp, WMSize)) return false;
   if (!WriteValue(fp, NC)) return false;
   if (!WriteValue(fp, PhSize)) return false;
+  if (!WriteValue(fp, ElActfStSize)) return false;
 
   return true;
 }
 
-static int ReadLinksHeader(FILE *fp, bool &has_header, string &error)
+static int ReadLinksHeader(FILE *fp, bool verbose, string &error)
 {
-  has_header = false;
   uint32_t magic;
   if (!ReadValue(fp, magic)) {
-    error = "Error reading links file.";
+    error = "Error reading links file header (missing magic).";
     return 1;
   }
 
   if (magic != kLinksFileMagic) {
-    if (fseek(fp, 0, SEEK_SET)!=0) {
-      error = "Error seeking links file.";
-      return 1;
-    }
-    return 0;
+    error = "Unsupported links file format: legacy/no-header links files are not supported.";
+    return 1;
   }
 
-  has_header = true;
   uint32_t version;
-  int wm_size, nc, ph_size;
+  int wm_size, nc, ph_size, el_actf_st_size;
   if (!ReadValue(fp, version)
       || !ReadValue(fp, wm_size)
       || !ReadValue(fp, nc)
-      || !ReadValue(fp, ph_size)) {
+      || !ReadValue(fp, ph_size)
+      || !ReadValue(fp, el_actf_st_size)) {
     error = "Error reading links file header.";
     return 1;
   }
 
   if (version != kLinksFileVersion) {
     error = "Unsupported links file version.";
+    if (verbose) {
+      error += " File version=" + to_string(version)
+        + ", expected=" + to_string(kLinksFileVersion) + ".";
+    }
     return 1;
   }
 
-  if (wm_size!=WMSize || nc!=NC || ph_size!=PhSize) {
-    error = "Links file incompatible with current WMSize/NC/PhSize.";
+  if (wm_size!=WMSize || nc!=NC || ph_size!=PhSize
+      || el_actf_st_size!=ElActfStSize) {
+    error = "Links file incompatible with current model sizes.";
+    if (verbose) {
+      error += " File[WMSize=" + to_string(wm_size)
+        + ", NC=" + to_string(nc)
+        + ", PhSize=" + to_string(ph_size)
+        + ", ElActfStSize=" + to_string(el_actf_st_size)
+        + "] Expected[WMSize=" + to_string(WMSize)
+        + ", NC=" + to_string(NC)
+        + ", PhSize=" + to_string(PhSize)
+        + ", ElActfStSize=" + to_string(ElActfStSize) + "].";
+    }
     return 1;
   }
 
@@ -885,37 +897,44 @@ int ParseCommand(Annabell *annabell, Monitor *Mon, display* Display, timespec* c
       fclose(fp);
       return 1;
     }
-    Mon->SaveWM(fp);
-    if (annabell->MemPh->HighVect.size()!=1) {
-      Display->Warning("Error on MemPh.");
-      fclose(fp);
-      return 1;
-    }
-    if (fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp)!=1) {
-      Display->Warning("Error writing MemPh.");
-      fclose(fp);
-      return 1;
-    }
-    if (annabell->StartPh->HighVect.size()!=1) {
-      Display->Warning("Error on StartPh.");
-      fclose(fp);
-      return 1;
-    }
-    if (fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp)!=1) {
-      Display->Warning("Error writing StartPh.");
-      fclose(fp);
-      return 1;
-    }
+    string io_stage;
+    try {
+      io_stage = "saving WM";
+      Mon->SaveWM(fp);
+      io_stage = "saving MemPh";
+      if (annabell->MemPh->HighVect.size()!=1)
+        throw ann_exception("invalid MemPh state");
+      if (fwrite(&annabell->MemPh->HighVect[0], sizeof(int), 1, fp)!=1)
+        throw ann_exception("write failed");
+      io_stage = "saving StartPh";
+      if (annabell->StartPh->HighVect.size()!=1)
+        throw ann_exception("invalid StartPh state");
+      if (fwrite(&annabell->StartPh->HighVect[0], sizeof(int), 1, fp)!=1)
+        throw ann_exception("write failed");
 
-    annabell->IW->SaveNr(fp);
-    annabell->IW->SaveInputLinks(fp);
-    annabell->ElActfSt->SaveNr(fp);
-    annabell->ElActfSt->SaveSparseInputLinks(fp);
-    annabell->ElActfSt->SaveOutputLinks(fp);
-    annabell->RemPh->SaveSparseOutputLinks(fp);
-    annabell->RemPhfWG->SaveNr(fp);
-    annabell->RemPhfWG->SaveSparseInputLinks(fp);
-    annabell->RemPhfWG->SaveSparseOutputLinks(fp);
+      io_stage = "saving IW neuron state";
+      annabell->IW->SaveNr(fp);
+      io_stage = "saving IW input links";
+      annabell->IW->SaveInputLinks(fp);
+      io_stage = "saving ElActfSt neuron state";
+      annabell->ElActfSt->SaveNr(fp);
+      io_stage = "saving ElActfSt sparse input links";
+      annabell->ElActfSt->SaveSparseInputLinks(fp);
+      io_stage = "saving ElActfSt output links";
+      annabell->ElActfSt->SaveOutputLinks(fp);
+      io_stage = "saving RemPh sparse output links";
+      annabell->RemPh->SaveSparseOutputLinks(fp);
+      io_stage = "saving RemPhfWG neuron state";
+      annabell->RemPhfWG->SaveNr(fp);
+      io_stage = "saving RemPhfWG sparse input links";
+      annabell->RemPhfWG->SaveSparseInputLinks(fp);
+      io_stage = "saving RemPhfWG sparse output links";
+      annabell->RemPhfWG->SaveSparseOutputLinks(fp);
+    } catch (ann_exception &e) {
+      Display->Warning("Error " + io_stage + " to '" + filename + "': " + string(e.what()));
+      fclose(fp);
+      return 1;
+    }
 
     fclose(fp);
 
@@ -937,45 +956,58 @@ int ParseCommand(Annabell *annabell, Monitor *Mon, display* Display, timespec* c
       Display->Warning("Links file not found.");
       return 1;
     }
-    bool has_header;
     string header_error;
-    if (ReadLinksHeader(fp, has_header, header_error)!=0) {
+    if (ReadLinksHeader(fp, annabell->flags->VerboseFlag, header_error)!=0) {
       Display->Warning(header_error);
       fclose(fp);
       return 1;
     }
-    if (!has_header) {
-      Display->Warning("Legacy links file format detected: no header.");
-    }
-    Mon->LoadWM(fp);
-    int i1;
-    int nmemb = fread(&i1, sizeof(int), 1, fp);
-    if (nmemb!=1) {
-      Display->Warning("Error reading MemPh.");
+    string io_stage;
+    try {
+      io_stage = "loading WM";
+      Mon->LoadWM(fp);
+      io_stage = "loading MemPh";
+      int i1;
+      if (fread(&i1, sizeof(int), 1, fp)!=1)
+        throw ann_exception("read failed");
+      if (i1<0 || i1>=annabell->MemPh->NN())
+        throw ann_exception("MemPh index out of range");
+      annabell->MemPh->Clear();
+      annabell->MemPh->HighVect.push_back(i1);
+      annabell->MemPh->Nr[i1]->O = 1;
+
+      io_stage = "loading StartPh";
+      if (fread(&i1, sizeof(int), 1, fp)!=1)
+        throw ann_exception("read failed");
+      if (i1<0 || i1>=annabell->StartPh->NN())
+        throw ann_exception("StartPh index out of range");
+      annabell->StartPh->Clear();
+      annabell->StartPh->HighVect.push_back(i1);
+      annabell->StartPh->Nr[i1]->O = 1;
+
+      io_stage = "loading IW neuron state";
+      annabell->IW->LoadNr(fp);
+      io_stage = "loading IW input links";
+      annabell->IW->LoadInputLinks(fp);
+      io_stage = "loading ElActfSt neuron state";
+      annabell->ElActfSt->LoadNr(fp);
+      io_stage = "loading ElActfSt sparse input links";
+      annabell->ElActfSt->LoadSparseInputLinks(fp);
+      io_stage = "loading ElActfSt output links";
+      annabell->ElActfSt->LoadOutputLinks(fp);
+      io_stage = "loading RemPh sparse output links";
+      annabell->RemPh->LoadSparseOutputLinks(fp);
+      io_stage = "loading RemPhfWG neuron state";
+      annabell->RemPhfWG->LoadNr(fp);
+      io_stage = "loading RemPhfWG sparse input links";
+      annabell->RemPhfWG->LoadSparseInputLinks(fp);
+      io_stage = "loading RemPhfWG sparse output links";
+      annabell->RemPhfWG->LoadSparseOutputLinks(fp);
+    } catch (ann_exception &e) {
+      Display->Warning("Error " + io_stage + " from '" + filename + "': " + string(e.what()));
+      fclose(fp);
       return 1;
     }
-    annabell->MemPh->Clear();
-    annabell->MemPh->HighVect.push_back(i1);
-    annabell->MemPh->Nr[i1]->O = 1;
-
-    nmemb = fread(&i1, sizeof(int), 1, fp);
-    if (nmemb!=1) {
-      Display->Warning("Error reading StartPh.");
-      return 1;
-    }
-    annabell->StartPh->Clear();
-    annabell->StartPh->HighVect.push_back(i1);
-    annabell->StartPh->Nr[i1]->O = 1;
-
-    annabell->IW->LoadNr(fp);
-    annabell->IW->LoadInputLinks(fp);
-    annabell->ElActfSt->LoadNr(fp);
-    annabell->ElActfSt->LoadSparseInputLinks(fp);
-    annabell->ElActfSt->LoadOutputLinks(fp);
-    annabell->RemPh->LoadSparseOutputLinks(fp);
-    annabell->RemPhfWG->LoadNr(fp);
-    annabell->RemPhfWG->LoadSparseInputLinks(fp);
-    annabell->RemPhfWG->LoadSparseOutputLinks(fp);
 
     fclose(fp);
 
@@ -1110,6 +1142,27 @@ int ParseCommand(Annabell *annabell, Monitor *Mon, display* Display, timespec* c
     }
 
     return 1;
+  }
+  ////////////////////////////////////////
+  // Enables/disables verbose diagnostics
+  ////////////////////////////////////////
+  else if (buf == VERBOSE_CMD) {
+    if (input_token.size()<2) {
+      Display->Warning("on or off should be provided as argument.");
+      return 1;
+    }
+    if (input_token[1] == VERBOSE_OFF) {
+      annabell->flags->VerboseFlag = false;
+      return 0;
+    }
+    else if (input_token[1] == VERBOSE_ON) {
+      annabell->flags->VerboseFlag = true;
+      return 0;
+    }
+    else {
+      Display->Warning("on or off should be provided as argument.");
+      return 1;
+    }
   }
   ////////////////////////////////////////
   // Takes the input from a YARP port

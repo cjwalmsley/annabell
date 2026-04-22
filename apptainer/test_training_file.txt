@@ -1,0 +1,24 @@
+#START OF SAMPLE
+#sample: 1 of 1
+#id: 56bfc563a10cfb14005512ca
+the word often used to describe Beyonce is Bootylicious
+#END OF DECLARATION
+
+? what word is often used to describe Beyonce
+#END OF QUESTION
+.pg often used to describe
+.wg Beyonce
+.ggp
+.ph the word often used to describe Beyonce is Bootylicious
+.drop_goal
+.wg Bootylicious
+.rw
+
+.stat
+.save test_weights.dat
+
+#END OF COMMANDS
+.time
+#END OF TIME
+.stat
+#END OF STATS
