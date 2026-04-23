@@ -1,21 +1,17 @@
 #START OF SAMPLE
-#sample: 1 of 1
-#id: 56bfc563a10cfb14005512ca
-the word often used to describe Beyonce is Bootylicious
+#sample: 1 of 3
+#id: 5726a950dd62a815002e8c4b
+the Bronze Age was a prehistoric period
 #END OF DECLARATION
 
-? what word is often used to describe Beyonce
+? when was the Bronze Age
 #END OF QUESTION
-.pg often used to describe
-.wg Beyonce
+.pg Bronze Age
 .ggp
-.ph the word often used to describe Beyonce is Bootylicious
+.ph the Bronze Age was a prehistoric period
 .drop_goal
-.wg Bootylicious
+.wg prehistoric period
 .rw
-
-.stat
-.save test_weights.dat
 
 #END OF COMMANDS
 .time

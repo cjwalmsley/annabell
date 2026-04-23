@@ -1,10 +1,5 @@
-.load test_weights.dat
-
-.stat
-
-#id: 56bfc563a10cfb14005512ca
-? what word is often used to describe Beyonce
+#id: 5726a950dd62a815002e8c4b
+#id: 5726a950dd62a815002e8c4b
+? when was the Bronze Age
 .x
 #END OF TESTING SAMPLE
-
-.stat

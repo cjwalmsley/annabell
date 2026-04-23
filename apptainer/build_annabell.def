@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:latest
+From: ubuntu:22.04
 Stage: build
 
 %setup
@@ -17,16 +17,26 @@ Stage: build
     ./src /app/annabell/src
 
 %post
+    set -eux
+
     apt-get update && apt-get install -y --no-install-recommends \
         g++ cmake libpcre3-dev libgtest-dev make pkg-config xz-utils \
         libpcre3 libgomp1 sed adduser automake autoconf libtool
+
+    # On Debian/Ubuntu, libgtest-dev often ships sources only. Build/install libs.
+    cd /usr/src/googletest
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j"$(nproc)"
+    cmake --install build
+    ldconfig
 
     # Build and install Annabell from the copied workspace sources.
     cd /app/annabell
     mkdir -p m4
     autoreconf -fiv
     ./configure
-    make -j"$(nproc)"
+    # Keep output deterministic so the first failing command is visible in logs.
+    make V=1 -j1
     make install
 
     rm -rf /var/lib/apt/lists/*

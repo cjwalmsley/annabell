@@ -25,12 +25,12 @@ chmod +x ./train_annabell.sh ./test_annabell.sh
 "
 
 EXPECTED_BLOCK=$(cat <<'EOF'
-#id: 56bfc563a10cfb14005512ca
-? what word is often used to describe Beyonce
+#id: 5726a950dd62a815002e8c4b
+? when was the Bronze Age
 .x
- -> Bootylicious
+ -> prehistoric period
 .
-Bootylicious
+prehistoric period
 #END OF TESTING SAMPLE
 EOF
 )
