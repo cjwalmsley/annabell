@@ -15,8 +15,26 @@ if [[ ! -f "$IMAGE_PATH" ]]; then
     exit 1
 fi
 
-# Run training and testing inside the container with the apptainer directory bound.
-apptainer exec --bind "$SCRIPT_DIR:/workspace" "$IMAGE_PATH" bash -lc "
+case "$(uname -s)" in
+    Darwin)
+        if ! command -v limactl >/dev/null 2>&1; then
+            echo "ERROR: limactl is required on macOS but was not found in PATH"
+            exit 1
+        fi
+        APPTAINER_CMD=(limactl shell apptainer -- apptainer)
+        ;;
+    Linux)
+        APPTAINER_CMD=(apptainer)
+        ;;
+    *)
+        echo "ERROR: unsupported platform: $(uname -s)"
+        exit 1
+        ;;
+esac
+
+# Run training and testing inside the container.
+# On macOS, route through Lima; on Linux, use Apptainer directly.
+"${APPTAINER_CMD[@]}" exec --bind "$SCRIPT_DIR:/workspace" "$IMAGE_PATH" bash -lc "
 set -euo pipefail
 cd /workspace
 chmod +x ./train_annabell.sh ./test_annabell.sh

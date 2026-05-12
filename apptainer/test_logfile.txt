@@ -2,16 +2,16 @@
 Learned Words: 0
 Learned Phrases: 0
 Learned associations between word groups and phrases: 0
-IW input links: 1207500
+IW input links: 1137500
 ElActfSt neurons: 0
 ElActfSt input links: 0
-ElActfSt virtual input links: 408692050000
-ElActfSt output links: 13000000
+ElActfSt virtual input links: 462038460000
+ElActfSt output links: 15600000
 RemPh output links: 0
-RemPh virtual output links: 16900000000
+RemPh virtual output links: 16500000000
 RemPhfWG neurons: 0
 RemPhfWG input links: 0
-RemPhfWG virtual input links: 6901000000
+RemPhfWG virtual input links: 6501000000
 RemPhfWG output links: 0
 RemPhfWG virtual output links: 10000000000
 .load test_weights.dat
@@ -19,40 +19,40 @@ RemPhfWG virtual output links: 10000000000
 #id: 5726a950dd62a815002e8c4b
 ? when was the Bronze Age
 .x
- -> Bronze Age
+ -> prehistoric period
 .
-Bronze Age
+prehistoric period
 #END OF TESTING SAMPLE
 .stat
 Learned Words: 10
 Learned Phrases: 12
 Learned associations between word groups and phrases: 48
-IW input links: 1207500
-ElActfSt neurons: 90
-ElActfSt input links: 37620
-ElActfSt virtual input links: 408692050000
-ElActfSt output links: 13000000
+IW input links: 1137500
+ElActfSt neurons: 205
+ElActfSt input links: 91635
+ElActfSt virtual input links: 462038460000
+ElActfSt output links: 15600000
 RemPh output links: 75
-RemPh virtual output links: 16900000000
+RemPh virtual output links: 16500000000
 RemPhfWG neurons: 48
-RemPhfWG input links: 249
-RemPhfWG virtual input links: 6901000000
+RemPhfWG input links: 480
+RemPhfWG virtual input links: 6501000000
 RemPhfWG output links: 48
 RemPhfWG virtual output links: 10000000000
 .t
-Elapsed time: 0.493610
-StActMem->act_time: 0.000053
-StActMem->as_time: 0.078710
-ElActfSt->act_time: 0.024826
-ElActfSt->as_time: 0.000170
-RemPh->act_time: 0.076030
-RemPh->as_time: 0.000855
-RemPhfWG->act_time: 0.000015
-RemPhfWG->as_time: 0.004376
-ElActfSt neurons: 90
+Elapsed time: 1.108414
+StActMem->act_time: 0.000077
+StActMem->as_time: 0.207420
+ElActfSt->act_time: 0.013181
+ElActfSt->as_time: 0.001205
+RemPh->act_time: 0.224188
+RemPh->as_time: 0.045596
+RemPhfWG->act_time: 0.000278
+RemPhfWG->as_time: 0.051051
+ElActfSt neurons: 205
 ElActfSt links: 0
 .logfile off
 
-real	0m0.987s
-user	0m4.838s
-sys	0m0.207s
+real	0m1.791s
+user	0m1.586s
+sys	0m0.239s
