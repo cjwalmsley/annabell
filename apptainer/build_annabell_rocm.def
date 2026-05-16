@@ -1,0 +1,80 @@
+Bootstrap: docker
+From: rocm/dev-ubuntu-22.04:latest
+Stage: build
+
+%setup
+    mkdir -p ${APPTAINER_ROOTFS}/app
+
+%files
+    ./configure.ac /app/annabell/
+    ./configure /app/annabell/
+    ./annabell.spec.in /app/annabell/
+    ./Makefile.am /app/annabell/
+    ./Makefile.in /app/annabell/
+    ./aclocal.m4 /app/annabell/
+    ./build-aux /app/annabell/build-aux
+    ./src /app/annabell/src
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update && apt-get install -y --no-install-recommends \
+        g++ cmake libpcre3-dev libgtest-dev make pkg-config xz-utils \
+        libpcre3 libgomp1 sed adduser automake autoconf libtool
+
+    # Install Python missing in some ROCm base images for hipify-perl
+    apt-get install -y python3
+
+    # On Debian/Ubuntu, libgtest-dev often ships sources only. Build/install libs.
+    cd /usr/src/googletest
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j"$(nproc)"
+    cmake --install build
+    ldconfig
+
+    cd /app/annabell/src
+
+    # Identify the path to hipify-perl
+    HIPIFY_PERL="/opt/rocm/bin/hipify-perl"
+    if [ ! -x "$HIPIFY_PERL" ]; then
+        echo "Could not find hipify-perl at /opt/rocm/bin/hipify-perl"
+        exit 1
+    fi
+
+    # HIPIFY the required CUDA files and modify their extensions so we can build them with hipcc
+    $HIPIFY_PERL ssm_cuda.cu > ssm_hip.cpp
+    $HIPIFY_PERL ssm_cuda.cc > ssm_hip.cc
+    $HIPIFY_PERL cuPrintf.cu > cuPrintf.cpp
+    $HIPIFY_PERL cuPrintf.cuh > cuPrintf.h
+
+    # Patch ssm_hip.cpp to include the newly hipified cuPrintf and remove CUDA-specific artifacts if necessary
+    sed -i 's/cuPrintf.cu/cuPrintf.cpp/g' ssm_hip.cpp
+    sed -i 's/cuPrintf.cuh/cuPrintf.h/g' cuPrintf.cpp
+    sed -i '1i #include <string.h>' cuPrintf.cpp
+
+    # Remove the standard nvcc command and compile with hipcc
+    /opt/rocm/bin/hipcc -I. -D CUDA -D __HIP_PLATFORM_AMD__ -fopenmp -O3 \
+      -o annabell_rocm \
+      annabell_main.cc Annabell.cc AnnabellFlags.cc AnnabellParams.cc \
+      Command.cc CommandUtils.cc EmptyCommand.cc CommentCommand.cc \
+      FileCommand.cc QuitCommand.cc CommandFactory.cc \
+      ssm.cc interface.cc Monitor.cc rnd.cc addref.cc fssm.cc \
+      display.cc modes.cc goals.cc ssm_omp.cc ssm_file.cc simplify.cc \
+      gettime.cc ParseCommandTests.cc sensorymotor.cc yarpinterface.cc \
+      ssm_hip.cc ssm_hip.cpp \
+      -lm -lpthread -lpcre -lgtest
+
+    cp annabell_rocm /usr/local/bin/annabell_rocm
+
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    exec /usr/local/bin/annabell_rocm "$@"
+
+%labels
+    Author GitHub Copilot
+    Description "Annabell built from workspace sources with AMD ROCm/HIP support"
+
+
