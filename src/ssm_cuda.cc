@@ -108,6 +108,18 @@ int ssm_as::cuda_CopyInpuLinks()
 
 int ssm_as::cuda_SparseActiv()
 {
+  static int old_total_links = -1;
+  int current_total_links = 0;
+  for (unsigned int issm=0; issm<SparseInSSM.size(); issm++) {
+      for (int inr=0; inr<SparseInSSM[issm]->NN(); inr++) {
+          current_total_links += InputLkSet[issm][inr].size();
+      }
+  }
+  if (current_total_links != old_total_links && old_total_links != -1) {
+      cuda_CopyInpuLinks();
+  }
+  old_total_links = current_total_links;
+
   //float DefaultMinWg = -1; // put in header
   int NRows, NCols = 512;
   struct timespec clk0, clk1;
