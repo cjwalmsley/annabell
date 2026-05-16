@@ -2,7 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-IMAGE_PATH="${1:-$SCRIPT_DIR/ANNABELL_LATEST.sif}"
+IMAGE_NAME="${1:-ANNABELL_LATEST}"
+USE_CUDA="${2:-}"
+
+if [[ ! "$IMAGE_NAME" == *.sif ]]; then
+    IMAGE_NAME="${IMAGE_NAME}.sif"
+fi
+
+IMAGE_PATH="$SCRIPT_DIR/$IMAGE_NAME"
 
 TRAIN_LOGFILE="train_logfile.txt"
 TRAINING_FILE="test_training_file.txt"
@@ -21,6 +28,7 @@ case "$(uname -s)" in
             echo "ERROR: limactl is required on macOS but was not found in PATH"
             exit 1
         fi
+        # Depending on host requirements you can add --nv or --rocm logic into the limactl pipeline
         APPTAINER_CMD=(limactl shell apptainer -- apptainer)
         ;;
     Linux)
@@ -32,14 +40,24 @@ case "$(uname -s)" in
         ;;
 esac
 
+# When using GPU we dynamically inject the run flag onto the container launcher
+if [[ "$USE_CUDA" == "--cuda" ]]; then
+    if [[ "$IMAGE_NAME" == *rocm* ]]; then
+        APPTAINER_EXEC_FLAGS=("--rocm")
+    else
+        APPTAINER_EXEC_FLAGS=("--nv")
+    fi
+else
+    APPTAINER_EXEC_FLAGS=()
+fi
+
 # Run training and testing inside the container.
-# On macOS, route through Lima; on Linux, use Apptainer directly.
-"${APPTAINER_CMD[@]}" exec --bind "$SCRIPT_DIR:/workspace" "$IMAGE_PATH" bash -lc "
+"${APPTAINER_CMD[@]}" exec "${APPTAINER_EXEC_FLAGS[@]}" --bind "$SCRIPT_DIR:/workspace" "$IMAGE_PATH" bash -lc "
 set -euo pipefail
 cd /workspace
 chmod +x ./train_annabell.sh ./test_annabell.sh
-./train_annabell.sh '$TRAIN_LOGFILE' '$TRAINING_FILE' '$WEIGHTS_FILE'
-./test_annabell.sh '$TEST_LOGFILE' '$WEIGHTS_FILE' '$TESTING_FILE'
+./train_annabell.sh '$TRAIN_LOGFILE' '$TRAINING_FILE' '$WEIGHTS_FILE' '$USE_CUDA'
+./test_annabell.sh '$TEST_LOGFILE' '$WEIGHTS_FILE' '$TESTING_FILE' '$USE_CUDA'
 "
 
 EXPECTED_BLOCK=$(cat <<'EOF'
