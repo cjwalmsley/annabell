@@ -1,0 +1,62 @@
+Bootstrap: docker
+From: nvidia/cuda:11.8.0-devel-ubuntu22.04
+Stage: build
+
+%setup
+    mkdir -p ${APPTAINER_ROOTFS}/app
+
+%files
+    # Copy only the build-relevant project files to avoid host-side broken symlinks.
+    ./configure.ac /app/annabell/
+    ./configure /app/annabell/
+    ./annabell.spec.in /app/annabell/
+    ./Makefile.am /app/annabell/
+    ./Makefile.in /app/annabell/
+    ./aclocal.m4 /app/annabell/
+    ./build-aux /app/annabell/build-aux
+    ./src /app/annabell/src
+
+%post
+    set -eux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update && apt-get install -y --no-install-recommends \
+        g++ cmake libpcre3-dev libgtest-dev make pkg-config xz-utils \
+        libpcre3 libgomp1 sed adduser automake autoconf libtool
+
+    # On Debian/Ubuntu, libgtest-dev often ships sources only. Build/install libs.
+    cd /usr/src/googletest
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j"$(nproc)"
+    cmake --install build
+    ldconfig
+
+    # Build Annabell using CUDA from the copied workspace sources.
+    cd /app/annabell/src
+
+    # We compile the necessary files using nvcc and link the necessary libraries.
+    nvcc -I. -D CUDA -lgomp -Xcompiler -fopenmp -Xcompiler -O3 \
+      -Wno-deprecated-gpu-targets \
+      -o annabell_cuda \
+      annabell_main.cc Annabell.cc AnnabellFlags.cc AnnabellParams.cc \
+      Command.cc CommandUtils.cc EmptyCommand.cc CommentCommand.cc \
+      FileCommand.cc QuitCommand.cc CommandFactory.cc \
+      ssm.cc interface.cc Monitor.cc rnd.cc addref.cc fssm.cc \
+      display.cc modes.cc goals.cc ssm_omp.cc ssm_file.cc simplify.cc \
+      gettime.cc ParseCommandTests.cc sensorymotor.cc yarpinterface.cc \
+      ssm_cuda.cc ssm_cuda.cu \
+      -lm -lpthread -lpcre -lgtest
+
+    # Copy the finished executable to the image binary path
+    cp annabell_cuda /usr/local/bin/annabell_cuda
+
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    exec /usr/local/bin/annabell_cuda "$@"
+
+%labels
+    Author GitHub Copilot
+    Description "Annabell built from workspace sources with CUDA support"
+
