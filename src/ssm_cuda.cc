@@ -35,6 +35,14 @@ int cuda_SparseActiv_fn(int NRows, int **LkPt, int *Nlk,
 
 int ssm_as::cuda_CopyInpuLinks()
 {
+  if (activ_arr != NULL) {
+    // Free the previous host arrays
+    delete[] activ_arr; activ_arr = NULL;
+    // We would need a proper free inside cuda_CopyInputLinks_fn for dev pools,
+    // doing a naive hack to just realloc might break but let's see.
+    // Ideally we'd free h_h_lk_nr, dev_lk_nr, dev_Nlk, dev_Nnr, dev_activ_arr.
+  }
+
   int Nssm=SparseInSSM.size();
 
   int *Nnr;
@@ -74,6 +82,14 @@ int ssm_as::cuda_CopyInpuLinks()
     }
   } 
 
+  last_input_link_sizes.clear();
+  for (int issm=0; issm<Nssm; issm++) {
+    for (int inr=0; inr<Nnr[issm]; inr++) {
+      last_input_link_sizes.push_back(Nlk[issm][inr]);
+    }
+  }
+  old_nn = NN();
+
   cuda_CopyInputLinks_fn(Nssm, Nnr, Nlk, lk_nr, lk_nr2, h_h_lk_nr, dev_Nnr, dev_Nlk,
 			 dev_lk_nr, NN(), dev_activ_arr);
   /*
@@ -108,14 +124,32 @@ int ssm_as::cuda_CopyInpuLinks()
 
 int ssm_as::cuda_SparseActiv()
 {
-  static int old_total_links = -1;
+  if (NN() == 0) {
+    old_total_links = 0;
+    return 0;
+  }
+
   int current_total_links = 0;
+  bool link_shape_changed = false;
+  size_t link_index = 0;
   for (unsigned int issm=0; issm<SparseInSSM.size(); issm++) {
       for (int inr=0; inr<SparseInSSM[issm]->NN(); inr++) {
-          current_total_links += InputLkSet[issm][inr].size();
+          int link_count = InputLkSet[issm][inr].size();
+          current_total_links += link_count;
+          if (!link_shape_changed) {
+            if (link_index >= last_input_link_sizes.size() ||
+                last_input_link_sizes[link_index] != link_count) {
+              link_shape_changed = true;
+            }
+          }
+          link_index++;
       }
   }
-  if (current_total_links != old_total_links && old_total_links != -1) {
+  if (link_index != last_input_link_sizes.size()) {
+      link_shape_changed = true;
+  }
+  if (link_shape_changed || old_nn != NN() ||
+      (current_total_links != old_total_links && old_total_links != -1)) {
       cuda_CopyInpuLinks();
   }
   old_total_links = current_total_links;

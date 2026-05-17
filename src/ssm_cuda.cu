@@ -34,28 +34,10 @@ inline void gpuAssert(cudaError_t code, char *file, int line, bool abort=true)
 #endif
 
 
-__global__ void kernel_SparseActiv_blk1(int NRows, int **LkPt,
-    int *Nlk, float *in_sign_arr, float *activ_arr)
+__global__ void kernel_SparseActiv(int NRows, int **LkPt,
+    int *Nlk, float *in_sign_arr, float *activ_arr, int NN)
 {
-  //float DefaultMinWg = -1;
-
-  if (blockIdx.x<NRows) {
-    int nlk = Nlk[blockIdx.x];
-    float in_sign = in_sign_arr[blockIdx.x];
-    float sum = in_sign;
-    int *lk_pt = LkPt[blockIdx.x];
-    if (threadIdx.x<nlk) {
-      int inr1 = (*(lk_pt+threadIdx.x));
-      atomicAdd(&activ_arr[inr1], sum);
-    }
-  }
-}
-
-__global__ void kernel_SparseActiv_blk2(int NRows, int **LkPt,
-    int *Nlk, float *in_sign_arr, float *activ_arr)
-{
-  //float DefaultMinWg = -1;
-  int irow = 65536 + blockIdx.x;
+  int irow = blockIdx.y * gridDim.x + blockIdx.x;
 
   if (irow<NRows) {
     int nlk = Nlk[irow];
@@ -64,7 +46,9 @@ __global__ void kernel_SparseActiv_blk2(int NRows, int **LkPt,
     int *lk_pt = LkPt[irow];
     if (threadIdx.x<nlk) {
       int inr1 = (*(lk_pt+threadIdx.x));
-      atomicAdd(&activ_arr[inr1], sum);
+      if (inr1 >= 0 && inr1 < NN) {
+        atomicAdd(&activ_arr[inr1], sum);
+      }
     }
   }
 }
@@ -152,12 +136,18 @@ int cuda_SparseActiv_fn(int NRows, int **LkPt, int *Nlk,
     cudaMemcpyHostToDevice));
 
   gpuErrchk( cudaDeviceSynchronize() ); GetMonotonicTime(&clk0);
-  kernel_SparseActiv_blk1<<< 65535, 512 >>>(NRows, dev_LkPt, dev_Nlk,
-    dev_in_sign, dev_activ_arr);
-  gpuErrchk( cudaPeekAtLastError() );
-  gpuErrchk( cudaDeviceSynchronize() );
-  kernel_SparseActiv_blk2<<< 65535, 512 >>>(NRows, dev_LkPt, dev_Nlk,
-    dev_in_sign, dev_activ_arr);
+
+  dim3 grid;
+  if(NRows > 65535) {
+      grid.x = 65535;
+      grid.y = (NRows / 65535) + 1;
+  } else {
+      grid.x = NRows;
+      grid.y = 1;
+  }
+
+  kernel_SparseActiv<<< grid, 512 >>>(NRows, dev_LkPt, dev_Nlk,
+    dev_in_sign, dev_activ_arr, NN);
   gpuErrchk( cudaPeekAtLastError() );
   gpuErrchk( cudaDeviceSynchronize() );
   gpuErrchk( cudaDeviceSynchronize() ); GetMonotonicTime(&clk1);

@@ -330,6 +330,9 @@ class ssm_as : public ssm_io, public vssm_as
   int ***h_h_lk_nr;
   float *activ_arr;
   float *dev_activ_arr;
+  int old_total_links;
+  int old_nn;
+  std::vector<int> last_input_link_sizes;
 
   ssm_as(int size, wnn_type wta_flag, nr *build_flag, nr *retr_flag);
   ssm_as(int size, wnn_type wta_flag, nr *build_flag, nr *retr_flag,

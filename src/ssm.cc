@@ -1343,6 +1343,14 @@ int vssm_as::Init(int size, wnn_type wta_flag, nr *build_flag, nr *retr_flag,
 ssm_as::ssm_as(int size, wnn_type wta_flag, nr *build_flag, nr *retr_flag) :
   ssm_io()
 {
+  activ_arr = NULL;
+  dev_activ_arr = NULL;
+  dev_Nnr = NULL;
+  dev_Nlk = NULL;
+  dev_lk_nr = NULL;
+  h_h_lk_nr = NULL;
+  old_total_links = -1;
+  old_nn = -1;
   Init(size, wta_flag, build_flag, retr_flag);
 }
 
@@ -1350,6 +1358,14 @@ ssm_as::ssm_as(int size, wnn_type wta_flag, nr *build_flag, nr *retr_flag,
                nr *rewd_flag) :
   ssm_io()
 {
+  activ_arr = NULL;
+  dev_activ_arr = NULL;
+  dev_Nnr = NULL;
+  dev_Nlk = NULL;
+  dev_lk_nr = NULL;
+  h_h_lk_nr = NULL;
+  old_total_links = -1;
+  old_nn = -1;
   Init(size, wta_flag, build_flag, retr_flag, rewd_flag);
   DynamicBiasFlag = false;
 }
