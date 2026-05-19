@@ -10,7 +10,13 @@ fi
 LOGFILE=$1
 TRAINING_FILE=$2
 PRETRAINED_WEIGHTS=$3
-USE_CUDA=${4:-}
+GPU_FLAG=${4:-}
+
+if [ "$GPU_FLAG" ]; then
+    echo "GPU flag is active (.cuda)"
+else
+    echo "GPU flag is inactive (CPU mode)"
+fi
 
 if command -v annabell_rocm >/dev/null 2>&1; then
     EXEC_CMD="annabell_rocm"
@@ -27,7 +33,7 @@ echo .logfile "$LOGFILE"
 #record the stats
 echo .stat
 #activate gpu mode if requested
-if [ "$USE_CUDA" = "--cuda" ]; then
+if [ "$GPU_FLAG" ]; then
     echo .cuda
 fi
 #train using the commands provided in the file

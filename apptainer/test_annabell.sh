@@ -20,6 +20,12 @@ else
     EXEC_CMD="annabell"
 fi
 
+if [ "$GPU_FLAG" ]; then
+    echo "GPU flag is active (.cuda)"
+else
+    echo "GPU flag is inactive (CPU mode)"
+fi
+
 # The time command's output (stderr) is appended to the log file.
 { time (
     #turn on logging
@@ -27,7 +33,7 @@ fi
     #record the stats
     echo .stat
     #activate gpu mode if requested
-    if [ "$USE_CUDA" = "--cuda" ]; then
+    if [ "$USE_CUDA" ]; then
         echo .cuda
     fi
     #load the weights

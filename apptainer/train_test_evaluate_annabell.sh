@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="${1:-ANNABELL_LATEST}"
-USE_CUDA="${2:-}"
+GPU_FLAG="${2:-}"
 
 if [[ ! "$IMAGE_NAME" == *.sif ]]; then
     IMAGE_NAME="${IMAGE_NAME}.sif"
@@ -41,14 +41,19 @@ case "$(uname -s)" in
 esac
 
 # When using GPU we dynamically inject the run flag onto the container launcher
-if [[ "$USE_CUDA" == "--cuda" ]]; then
-    if [[ "$IMAGE_NAME" == *rocm* ]]; then
-        APPTAINER_EXEC_FLAGS=("--rocm")
-    else
-        APPTAINER_EXEC_FLAGS=("--nv")
-    fi
+
+if [[ "$GPU_FLAG" == "--cuda" ]]; then
+    APPTAINER_EXEC_FLAGS=("--nv")
+elif [[ "$GPU_FLAG" == "--rocm" ]]; then
+    APPTAINER_EXEC_FLAGS=("--rocm")
 else
     APPTAINER_EXEC_FLAGS=()
+fi
+
+if [ "$GPU_FLAG" ]; then
+    echo "GPU flag is active (.cuda)"
+else
+    echo "GPU flag is inactive (CPU mode)"
 fi
 
 # Run training and testing inside the container.
@@ -56,8 +61,8 @@ fi
 set -euo pipefail
 cd /workspace
 chmod +x ./train_annabell.sh ./test_annabell.sh
-./train_annabell.sh '$TRAIN_LOGFILE' '$TRAINING_FILE' '$WEIGHTS_FILE' '$USE_CUDA'
-./test_annabell.sh '$TEST_LOGFILE' '$WEIGHTS_FILE' '$TESTING_FILE' '$USE_CUDA'
+./train_annabell.sh '$TRAIN_LOGFILE' '$TRAINING_FILE' '$WEIGHTS_FILE' '$GPU_FLAG'
+./test_annabell.sh '$TEST_LOGFILE' '$WEIGHTS_FILE' '$TESTING_FILE' '$GPU_FLAG'
 "
 
 EXPECTED_BLOCK=$(cat <<'EOF'
