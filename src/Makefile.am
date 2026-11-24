@@ -26,11 +26,11 @@ goals.cc ssm_omp.cc ssm_file.cc simplify.cc gettime.cc commands/ParseCommandTest
 
 
 annabell_CPPFLAGS = @OPENMP_CXXFLAGS@
-annabell_LDFLAGS = @OPENMP_CXXFLAGS@ -lgtest -lpthread -lpcre
+annabell_LDFLAGS = @OPENMP_CXXFLAGS@
+annabell_LDADD = -lgtest -lpthread -lpcre
 
 if ENABLE_YARP
-annabell_LDFLAGS += -lYARP_init
-annabell_LDFLAGS += -lYARP_OS
+annabell_LDADD += -lYARP_init -lYARP_OS
 annabell_CPPFLAGS += -DUSE_YARP
 endif
 

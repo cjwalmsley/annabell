@@ -1,0 +1,24 @@
+services:
+  annabell:
+    build:
+      context: .
+      target: runtime
+    image: annabell:latest
+    stdin_open: true
+    tty: true
+    working_dir: /work
+    volumes:
+      - ${ANNABELL_WORKDIR:-.}:/work
+
+  dev:
+    build:
+      context: .
+      target: dev
+    image: annabell:dev
+    profiles:
+      - dev
+    stdin_open: true
+    tty: true
+    working_dir: /src
+    volumes:
+      - .:/src
