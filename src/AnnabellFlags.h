@@ -29,10 +29,6 @@ public:
 
 	string AnswerTimePhrase;
 	string SpeakerName;
-
-	int ExplorationPhaseIdx;
-	string OutPhrase;
-	bool CompleteOutputFlag;
 };
 
 #endif /* SRC_ANNABELLFLAGS_H_ */

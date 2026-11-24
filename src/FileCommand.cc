@@ -5,9 +5,9 @@
  *      Author: jpp
  */
 
-#include <commands/CommandFactory.h>
+#include <CommandFactory.h>
 #include <display.h>
-#include <commands/FileCommand.h>
+#include <FileCommand.h>
 #include <iosfwd>
 #include <iostream>
 #include <string>

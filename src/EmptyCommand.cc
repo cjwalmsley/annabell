@@ -8,7 +8,7 @@
 #include <Annabell.h>
 #include <AnnabellFlags.h>
 #include <display.h>
-#include <commands/EmptyCommand.h>
+#include <EmptyCommand.h>
 #include <fssm.h>
 #include <gettime.h>
 #include <Monitor.h>
